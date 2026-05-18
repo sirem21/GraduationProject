@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disease Assessment System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+{% include 'partials/styles.html' %}
+</head>
+<body>
+
+{% include 'partials/screens/landing.html' %}
+{% include 'partials/screens/path.html' %}
+{% include 'partials/screens/sample.html' %}
+{% include 'partials/screens/l1_form.html' %}
+{% include 'partials/screens/l1_processing.html' %}
+{% include 'partials/screens/l1_result.html' %}
+{% include 'partials/screens/l2_form.html' %}
+{% include 'partials/screens/l2_processing.html' %}
+{% include 'partials/screens/l2_result.html' %}
+{% include 'partials/screens/hospitals.html' %}
+{% include 'partials/screens/complete.html' %}
+
+<button id="global-back-btn" class="step-back-btn" onclick="goBackOneStep()" aria-label="Go one step back" title="Go one step back">← Back</button>
+
+{% include 'partials/app_script.html' %}
+</body>
+</html>

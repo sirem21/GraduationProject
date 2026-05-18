@@ -1,0 +1,29 @@
+<div id="screen-l2form" class="screen">
+  <header class="sys-header">
+    <div class="sys-logo mono">DAS <span>// v0.1.0</span></div>
+    <div class="sys-status"><div class="pulse-dot"></div><span>SYSTEM ONLINE</span></div>
+  </header>
+  <div class="progress-bar-wrap">
+    <div class="progress-steps">
+      <div class="p-step done"><div class="p-step-num">✓</div><span>ENTRY</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step done"><div class="p-step-num">✓</div><span>PATH</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step done"><div class="p-step-num">✓</div><span>L1 MODEL</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step active"><div class="p-step-num">4</div><span>L2 MODEL</span></div>
+      <div class="p-line"></div>
+      <div class="p-step"><div class="p-step-num">5</div><span>ROUTING</span></div>
+    </div>
+  </div>
+  <div class="main-content form-page">
+    <div class="page-tag" id="l2-tag">LAYER 2 · DISEASE-SPECIFIC</div>
+    <h2 class="page-title" style="font-size:32px;margin-bottom:4px" id="l2-title">Specific Assessment</h2>
+    <p class="page-sub" id="l2-sub">// targeted questions for risk stratification</p>
+    <div class="form-section" id="l2-fields"></div>
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="showScreen('screen-l1result')">← Back</button>
+      <button class="btn btn-primary" onclick="runL2()">Run Risk Analysis →</button>
+    </div>
+  </div>
+</div>

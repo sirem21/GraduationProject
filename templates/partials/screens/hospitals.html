@@ -1,0 +1,33 @@
+<div id="screen-hospitals" class="screen">
+  <header class="sys-header">
+    <div class="sys-logo mono">DAS <span>// v0.1.0</span></div>
+    <div class="sys-status"><div class="pulse-dot"></div><span>ROUTING</span></div>
+  </header>
+  <div class="progress-bar-wrap">
+    <div class="progress-steps">
+      <div class="p-step done"><div class="p-step-num">✓</div><span>ENTRY</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step done"><div class="p-step-num">✓</div><span>PATH</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step done"><div class="p-step-num">✓</div><span>L1 MODEL</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step done"><div class="p-step-num">✓</div><span>L2 MODEL</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step active"><div class="p-step-num">5</div><span>ROUTING</span></div>
+    </div>
+  </div>
+  <div class="main-content" style="align-items:center;text-align:center">
+    <div class="page-tag">PAGE 3 · HOSPITAL ROUTING</div>
+    <h2 class="page-title" style="font-size:28px;margin-bottom:4px">Hospital Recommendations</h2>
+    <p class="page-sub">// ranking: risk-adaptive scoring • Red (Urgent): 95% distance, 5% occupancy • Yellow (Medium): 60% distance, 40% occupancy • Green (Low): 25% distance, 75% occupancy</p>
+
+    <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;justify-content:center" id="routing-context"></div>
+
+    <div class="hospital-list" id="hospital-list"></div>
+
+    <div style="display:flex;gap:12px;margin-top:24px">
+      <button class="btn btn-ghost" onclick="showScreen('screen-l2result')">← Back</button>
+      <button class="btn btn-primary" onclick="completeSimulation()">Complete Simulation ✓</button>
+    </div>
+  </div>
+</div>

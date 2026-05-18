@@ -1,0 +1,29 @@
+<div id="screen-sample" class="screen">
+  <header class="sys-header">
+    <div class="sys-logo mono">DAS <span>// v0.1.0</span></div>
+    <div class="sys-status"><div class="pulse-dot"></div><span>SYSTEM ONLINE</span></div>
+  </header>
+  <div class="progress-bar-wrap">
+    <div class="progress-steps">
+      <div class="p-step done"><div class="p-step-num">✓</div><span>ENTRY</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step done"><div class="p-step-num">✓</div><span>PATH</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step active"><div class="p-step-num">3</div><span>L1 MODEL</span></div>
+      <div class="p-line"></div>
+      <div class="p-step"><div class="p-step-num">4</div><span>L2 MODEL</span></div>
+      <div class="p-line"></div>
+      <div class="p-step"><div class="p-step-num">5</div><span>ROUTING</span></div>
+    </div>
+  </div>
+  <div class="main-content" style="align-items:center;text-align:center">
+    <div class="page-tag">PATH B · SAMPLE CASES</div>
+    <h2 class="page-title">SELECT<br>PATIENT</h2>
+    <p class="page-sub">// pre-loaded clinical profiles</p>
+    <div class="samples-grid" id="samples-grid"></div>
+    <div style="margin-top:24px;display:flex;gap:12px">
+      <button class="btn btn-ghost" onclick="showScreen('screen-path')">← Back</button>
+      <button class="btn btn-primary" id="btn-load-sample" onclick="loadSample()" disabled style="opacity:0.4">Load Sample →</button>
+    </div>
+  </div>
+</div>

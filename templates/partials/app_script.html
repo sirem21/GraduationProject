@@ -1,0 +1,594 @@
+<script>
+const state = {
+  path: null,
+  selectedSampleId: null,
+  samples: [],
+  l1Features: {},
+  l2Features: {},
+  l1Result: null,
+  l2Result: null,
+  hospitals: [],
+  selectedHospital: null,
+  screenHistory: ['screen-landing'],
+  currentScreen: 'screen-landing'
+};
+
+const DISEASE_CONFIG = {
+  stroke: { label: 'Stroke', icon: '[ST]', color: 'var(--stroke-c)', cls: 'stroke' },
+  diabetes: { label: 'Diabetes', icon: '[DB]', color: 'var(--diabetes-c)', cls: 'diabetes' },
+  hypertension: { label: 'Hypertension', icon: '[HT]', color: 'var(--hypertension-c)', cls: 'hypertension' }
+};
+
+const L2_FIELDS = {
+  stroke: [
+    { key: 'atrial_fibrillation', label: 'Atrial Fibrillation (Diagnosed)' },
+    { key: 'age', label: 'Age (years)', type: 'number', min: 15, max: 95, step: 1, default: 45 },
+    { key: 'smoking', label: 'Smoking' },
+    { key: 'family_history_stroke', label: 'Family History: Stroke' }
+  ],
+  diabetes: [
+    { key: 'bmi', label: 'BMI (kg/m2)', type: 'number', min: 14, max: 55, step: 0.1, default: 26.0 },
+    { key: 'frequent_infection', label: 'Frequent Infections' },
+    { key: 'unintended_weight_loss', label: 'Unintended Weight Loss' },
+    { key: 'appitide', label: 'Appetite Changes' }
+  ],
+  hypertension: [
+    { key: 'chest_pain', label: 'Chest Pain' },
+    { key: 'physical_activity', label: 'Low Physical Activity' },
+    { key: 'headache', label: 'Headache' },
+    { key: 'alcohol', label: 'Alcohol Use' },
+    { key: 'dizziness', label: 'Dizziness' },
+    { key: 'stress', label: 'Chronic Stress' }
+  ]
+};
+
+function formatNum(value, maxDecimals = 1) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '--';
+  return num.toLocaleString('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxDecimals
+  });
+}
+
+function updateBackButton() {
+  const btn = document.getElementById('global-back-btn');
+  if (!btn) return;
+  btn.classList.toggle('hidden', state.screenHistory.length <= 1);
+}
+
+function showScreen(id, options = {}) {
+  const { record = true } = options;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  if (target) {
+    target.classList.add('active');
+  }
+
+  if (record) {
+    const last = state.screenHistory[state.screenHistory.length - 1];
+    if (last !== id) {
+      state.screenHistory.push(id);
+    }
+  }
+
+  state.currentScreen = id;
+  updateBackButton();
+  window.scrollTo(0, 0);
+}
+
+function goBackOneStep() {
+  if (state.screenHistory.length <= 1) return;
+  state.screenHistory.pop();
+  const prev = state.screenHistory[state.screenHistory.length - 1] || 'screen-landing';
+  showScreen(prev, { record: false });
+}
+
+function startAssessment() {
+  document.getElementById('ls2').textContent = 'OK';
+  document.getElementById('ls2').classList.add('done');
+  document.getElementById('ls3').textContent = 'OK';
+  document.getElementById('ls3').classList.add('done');
+  fetch('/api/samples').then(r => r.json()).then(data => { state.samples = data; renderSamples(); });
+  setTimeout(() => showScreen('screen-path'), 180);
+}
+
+function choosePath(path) {
+  state.path = path;
+  if (path === 'personal') {
+    resetL1Form();
+    showScreen('screen-l1form');
+  } else {
+    showScreen('screen-sample');
+  }
+}
+
+function renderSamples() {
+  const grid = document.getElementById('samples-grid');
+  grid.innerHTML = state.samples.map(s => `
+    <div class="sample-card" id="sc-${s.id}" onclick="selectSample(${s.id})">
+      <div class="sample-id">PATIENT_${String(s.id).padStart(3,'0')}</div>
+      <div class="sample-name">${s.name}</div>
+      <div class="sample-profile">${s.profile}</div>
+      <span class="label-tag tag-${s.expected_disease}">${s.tag}</span>
+    </div>
+  `).join('');
+}
+
+function selectSample(id) {
+  state.selectedSampleId = id;
+  document.querySelectorAll('.sample-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('sc-' + id).classList.add('selected');
+  const btn = document.getElementById('btn-load-sample');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+}
+
+function loadSample() {
+  if (!state.selectedSampleId) return;
+  const s = state.samples.find(x => x.id === state.selectedSampleId);
+  state.l1Features = { ...s.l1 };
+  state.l2Features = { ...s.l2 };
+  runL1();
+}
+
+function getL1Features() {
+  const f = {};
+  f.glucose_lvl = parseInt(document.getElementById('f-glucose_lvl').value, 10);
+  f.blood_p = parseInt(document.getElementById('f-blood_p').value, 10);
+  const toggleFields = ['sudden_onset', 'paralysed_area', 'speech_difficulty', 'face_numbness',
+    'frequent_urination', 'excessive_thrist', 'family_history_diabetes',
+    'family_history_hypertension', 'nose_bleed', 'cholesterol'];
+  toggleFields.forEach(field => { f[field] = state.l1Features[field] || 0; });
+  return f;
+}
+
+function setToggle(btn, field, val) {
+  const group = btn.parentElement;
+  group.querySelectorAll('.toggle-btn').forEach(b => {
+    b.classList.remove('active');
+  });
+  btn.classList.add('active');
+  state.l1Features[field] = val;
+}
+
+function resetL1Form() {
+  state.l1Features = {};
+  document.querySelectorAll('#screen-l1form .toggle-btn.no').forEach(b => {
+    b.classList.add('active');
+    b.parentElement.querySelectorAll('.toggle-btn.yes').forEach(y => y.classList.remove('active'));
+  });
+}
+
+function runL1() {
+  let features;
+  if (state.path === 'personal') {
+    features = getL1Features();
+    state.l1Features = features;
+  } else {
+    features = state.l1Features;
+  }
+  showScreen('screen-l1proc');
+  animateLog('l1-log', [
+    '<span class="info">[INFO]</span> Extracting feature vector...',
+    '<span class="info">[INFO]</span> Normalizing numeric inputs...',
+    '<span class="info">[INFO]</span> Loading L1 inference model...',
+    '<span class="info">[INFO]</span> Running forward pass...',
+    '<span class="ok">[OK]</span> Predictions computed successfully.',
+    '<span class="ok">[OK]</span> Disease probabilities ready.'
+  ], () => {
+    fetch('/api/l1_predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ features })
+    }).then(r => r.json()).then(data => {
+      state.l1Result = data;
+      renderL1Result(data);
+      setTimeout(() => showScreen('screen-l1result'), 450);
+    });
+  });
+}
+
+function renderL1Result(data) {
+  const cards = document.getElementById('disease-cards');
+  const diseases = ['stroke', 'diabetes', 'hypertension'];
+  const predicted = data.predicted_disease;
+  const warningThresholds = {
+    stroke: 20.95,
+    diabetes: 16.72,
+    hypertension: 29.61
+  };
+
+  const proceedBtn = document.getElementById('btn-proceed-l2');
+
+  if (predicted === null || predicted === undefined) {
+    cards.innerHTML = `
+      <div class="disease-card l1-no-disease-box">
+        <div class="headline">No disease suspected</div>
+        <div class="copy">
+          No condition exceeds the triage thresholds.
+          <span>You can monitor the patient or provide more inputs and run L1 again.</span>
+        </div>
+      </div>
+    `;
+    document.getElementById('l1-predicted-info').innerHTML = `
+      <div class="l1-note-box">
+        <div class="l1-note-title">Clinical note</div>
+        <div class="l1-note-text">No disease meets the L1 thresholds, so the workflow stops here.</div>
+      </div>
+    `;
+    if (proceedBtn) {
+      proceedBtn.style.display = 'none';
+    }
+    return;
+  }
+
+  const cfg = DISEASE_CONFIG[data.predicted_disease];
+  const secondaryRiskDiseases = diseases.filter(
+    d => d !== predicted && data.scores[d] >= warningThresholds[d]
+  );
+  const secondaryText = secondaryRiskDiseases.length
+    ? secondaryRiskDiseases.map(d => DISEASE_CONFIG[d].label).join(', ')
+    : 'No additional conditions reached the triage warning range.';
+
+  cards.innerHTML = `
+    <div class="disease-card ${predicted}">
+      <div class="l1-summary-hero">
+        <div class="l1-summary-topline">
+          <span class="label-tag tag-${predicted}">PRIMARY CONDITION</span>
+          <span class="label-tag tag-medium">L1 TRIAGE</span>
+        </div>
+        <div class="dc-icon" style="color:${cfg.color}; font-family:'JetBrains Mono',monospace; font-size:16px">${cfg.icon}</div>
+        <div class="dc-name" style="font-size:clamp(22px,4vw,30px)">${cfg.label}</div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('l1-predicted-info').innerHTML = `
+    <div class="l1-note-box">
+      <div class="l1-note-title">Clinical note</div>
+      <div class="l1-note-text">
+        Patient classified as <span style="color:${cfg.color};font-weight:700">${cfg.label.toUpperCase()}</span> candidate.
+        <span>Proceeding to disease-specific L2 assessment for risk stratification.</span>
+        <div class="l1-secondary-list">
+          <span class="l1-secondary-chip ${predicted}">Primary: ${cfg.label}</span>
+          ${secondaryRiskDiseases.map(d => `<span class="l1-secondary-chip ${d}">Review: ${DISEASE_CONFIG[d].label}</span>`).join('')}
+        </div>
+        <span style="display:block;margin-top:10px;color:var(--text-soft);font-family:'JetBrains Mono',monospace;font-size:12px">Also review: ${secondaryText}</span>
+      </div>
+    </div>
+  `;
+  if (proceedBtn) {
+    proceedBtn.style.display = '';
+    proceedBtn.disabled = false;
+    proceedBtn.classList.remove('disabled');
+  }
+}
+
+function proceedToL2() {
+  if (!state.l1Result || !state.l1Result.predicted_disease) {
+    // No disease to proceed with
+    alert('No disease exceeded L1 thresholds — nothing to proceed to L2.');
+    return;
+  }
+  const disease = state.l1Result.predicted_disease;
+  const cfg = DISEASE_CONFIG[disease];
+  const fields = L2_FIELDS[disease];
+
+  document.getElementById('l2-tag').textContent = `LAYER 2 | ${cfg.label.toUpperCase()}-SPECIFIC ASSESSMENT`;
+  document.getElementById('l2-title').textContent = `${cfg.icon} ${cfg.label} Risk Factors`;
+  document.getElementById('l2-sub').textContent = `// targeted symptom screening for ${cfg.label.toLowerCase()} risk stratification`;
+
+  const sampleL2 = (state.path === 'sample' && state.selectedSampleId) ?
+    state.samples.find(x => x.id === state.selectedSampleId).l2 : {};
+
+  const html = `
+    <div class="form-section-title">${cfg.icon} ${cfg.label} Specific Symptoms</div>
+    <div class="form-grid">
+      ${fields.map(f => {
+        const val = sampleL2[f.key] !== undefined ? sampleL2[f.key] : (f.default !== undefined ? f.default : 0);
+        if (f.type === 'number') {
+          const displayVal = f.step && f.step < 1 ? Number(val).toFixed(1) : Number(val);
+          return `
+            <div class="field">
+              <div class="field-label">${f.label}</div>
+              <div class="slider-wrap">
+                <input type="range" min="${f.min}" max="${f.max}" step="${f.step || 1}" value="${val}" oninput="setL2Slider('${f.key}', this.value, ${f.step && f.step < 1 ? 'true' : 'false'})">
+                <div class="slider-val" id="v-l2-${f.key}">${displayVal}</div>
+              </div>
+            </div>
+          `;
+        }
+        return `
+          <div class="field">
+            <div class="field-label">${f.label}</div>
+            <div class="toggle-group">
+              <button class="toggle-btn yes${val === 1 ? ' active' : ''}" onclick="setL2Toggle(this,'${f.key}',1)">YES</button>
+              <button class="toggle-btn no${val === 0 ? ' active' : ''}" onclick="setL2Toggle(this,'${f.key}',0)">NO</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+  document.getElementById('l2-fields').innerHTML = html;
+
+  if (state.path === 'sample') {
+    const s = state.samples.find(x => x.id === state.selectedSampleId);
+    state.l2Features = { ...s.l2 };
+    fields.forEach(f => {
+      if (state.l2Features[f.key] === undefined) {
+        state.l2Features[f.key] = f.default !== undefined ? f.default : 0;
+      }
+    });
+  } else {
+    state.l2Features = {};
+    fields.forEach(f => { state.l2Features[f.key] = f.default !== undefined ? f.default : 0; });
+  }
+
+  showScreen('screen-l2form');
+}
+
+function setL2Toggle(btn, field, val) {
+  const group = btn.parentElement;
+  group.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.l2Features[field] = val;
+}
+
+function setL2Slider(field, val, isDecimal) {
+  const parsed = isDecimal ? parseFloat(val) : parseInt(val, 10);
+  state.l2Features[field] = parsed;
+  document.getElementById(`v-l2-${field}`).textContent = isDecimal ? parsed.toFixed(1) : parsed;
+}
+
+function runL2() {
+  const disease = state.l1Result.predicted_disease;
+  showScreen('screen-l2proc');
+  animateLog('l2-log', [
+    `<span class="info">[INFO]</span> Disease context: ${disease.toUpperCase()}`,
+    '<span class="info">[INFO]</span> Loading disease-specific feature weights...',
+    '<span class="info">[INFO]</span> Running L2 risk stratification model...',
+    '<span class="info">[INFO]</span> Computing risk percentile...',
+    '<span class="ok">[OK]</span> Risk score computed.',
+    '<span class="ok">[OK]</span> Risk level classification complete.'
+  ], () => {
+    fetch('/api/l2_predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ disease, features: state.l2Features, l1_features: state.l1Features })
+    }).then(r => r.json()).then(data => {
+      state.l2Result = data;
+      renderL2Result(data);
+      setTimeout(() => showScreen('screen-l2result'), 450);
+    });
+  });
+}
+
+function renderL2Result(data) {
+  const { risk_score, risk_level } = data;
+  const gauge = document.getElementById('risk-gauge');
+  const num = document.getElementById('risk-score-num');
+  const badge = document.getElementById('risk-level-badge');
+  const disease = state.l1Result.predicted_disease;
+  const cfg = DISEASE_CONFIG[disease];
+
+  gauge.className = `risk-gauge ${risk_level}`;
+  num.className = `risk-score-num ${risk_level}`;
+  num.textContent = formatNum(risk_score, 1);
+  badge.className = `risk-level-badge ${risk_level}`;
+  badge.textContent = risk_level.toUpperCase() + ' RISK';
+
+  document.getElementById('risk-info-row').innerHTML = `
+    <div class="risk-info-pill"><span>DISEASE</span><span>${cfg.icon} ${cfg.label}</span></div>
+    <div class="risk-info-pill"><span>RISK LEVEL</span><span class="${risk_level === 'high' ? 'tag-high' : risk_level === 'medium' ? 'tag-medium' : 'tag-low'}" style="padding:2px 6px;border-radius:3px;font-family:JetBrains Mono,monospace;font-size:11px;letter-spacing:1px">${risk_level.toUpperCase()}</span></div>
+    <div class="risk-info-pill"><span>SCORE</span><span>${formatNum(risk_score, 1)} / 100</span></div>
+  `;
+
+  // Eğer geçmiş (history) tek elemanlıysa, geri butonunun çalışması için
+  // anlamlı bir önceki ekran ekleyelim (L1 result). Bu, kullanıcının
+  // L2 sonuç ekranından bir adım geri gitmesini sağlar.
+  if (!Array.isArray(state.screenHistory) || state.screenHistory.length <= 1) {
+    state.screenHistory = ['screen-l1result', 'screen-l2result'];
+  }
+  updateBackButton();
+}
+
+function routeToHospital() {
+  const { predicted_disease } = state.l1Result;
+  const { risk_level } = state.l2Result;
+
+  document.getElementById('routing-context').innerHTML = `
+    <span class="label-tag tag-${predicted_disease}">${DISEASE_CONFIG[predicted_disease].label}</span>
+    <span class="label-tag tag-${risk_level}">${risk_level.toUpperCase()} RISK</span>
+  `;
+
+  // Get patient location based on path
+  const getPatientLocation = () => {
+    return new Promise((resolve) => {
+      if (state.path === 'sample') {
+        // Sample path: use patient's location from SAMPLE_PATIENTS
+        const selectedPatient = state.samples.find(p => p.id === state.selectedSampleId);
+        if (selectedPatient && selectedPatient.location) {
+          resolve({
+            x: selectedPatient.location.x,
+            y: selectedPatient.location.y
+          });
+        } else {
+          // Fallback to default
+          resolve({ x: 15.7, y: 13.1 });
+        }
+      } else {
+        // Personal path: get GPS location
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (position) => {
+              resolve({
+                x: position.coords.latitude,
+                y: position.coords.longitude
+              });
+            },
+            (error) => {
+              console.log('Geolocation error, using default:', error);
+              // Fallback to default if geolocation fails
+              resolve({ x: 15.7, y: 13.1 });
+            }
+          );
+        } else {
+          console.log('Geolocation not available, using default');
+          resolve({ x: 15.7, y: 13.1 });
+        }
+      }
+    });
+  };
+
+  getPatientLocation().then(location => {
+    // Track location source and coordinates for display
+    let locationSource = '';
+    if (state.path === 'sample') {
+      const selectedPatient = state.samples.find(p => p.id === state.selectedSampleId);
+      locationSource = `Sample Database: ${selectedPatient.name} → Koord: (${location.x}, ${location.y})`;
+    } else {
+      locationSource = `Browser GPS → Koord: (${location.x.toFixed(4)}, ${location.y.toFixed(4)})`;
+    }
+    state.locationSource = locationSource;
+    state.patientLocation = location;
+
+    fetch('/api/hospitals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        disease: predicted_disease, 
+        risk_level,
+        patient_x: location.x,
+        patient_y: location.y
+      })
+    }).then(r => r.json()).then(hospitals => {
+      state.hospitals = hospitals;
+      state.selectedHospital = hospitals[0];
+      renderHospitals(hospitals, predicted_disease);
+      showScreen('screen-hospitals');
+    });
+  });
+}
+
+function renderHospitals(hospitals, disease) {
+  const list = document.getElementById('hospital-list');
+  
+  // Add location source info at the top
+  const locationHeader = `
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+      <span style="font-size: 16px;">📍</span>
+      <strong>Location Source:</strong> ${state.locationSource || 'Not specified'}
+    </div>
+  `;
+  
+  list.innerHTML = locationHeader + hospitals.map((h, i) => {
+    const available = h.total_capacity - h.current_occupancy;
+    const occupancyPercent = Math.round((h.current_occupancy / h.total_capacity) * 100);
+    return `
+    <div class="hosp-card" onclick="selectHospital(${h.id})" id="hcard-${h.id}" style="cursor:pointer;${i === 0 ? 'border-color:var(--primary)' : ''}">
+      <div class="hosp-rank ${i === 0 ? 'first' : ''}">#${i + 1}</div>
+      <div class="hosp-info">
+        <div class="hosp-name">HOSPITAL_${String(h.id).padStart(2,'0')}</div>
+        <div class="hosp-meta">
+          <span class="hosp-meta-item">Location: (${h.location.x}, ${h.location.y})</span>
+          <span class="hosp-meta-item">Capacity: ${available} / ${h.total_capacity} beds</span>
+          <span class="hosp-meta-item">Occupancy: ${occupancyPercent}%</span>
+        </div>
+        <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+          ${h.has_ct_scan ? `<span class="specialist-badge">CT Imaging Support</span>` : `<span class="no-spec-badge">No CT Support</span>`}
+          ${disease === 'stroke' && h.is_vascular_center ? `<span class="specialist-badge">Vascular Center</span>` : ''}
+        </div>
+      </div>
+      <div class="hosp-score-col">
+        <div class="hosp-score-val">${formatNum(h.score, 1)}</div>
+        <div class="hosp-score-bar"><div class="hosp-score-fill" style="width:${Math.max(0, Math.min(Number(h.score), 100))}%"></div></div>
+      </div>
+    </div>
+    `;
+  }).join('');
+}
+
+function selectHospital(id) {
+  state.selectedHospital = state.hospitals.find(h => h.id === id);
+  document.querySelectorAll('.hosp-card').forEach(c => c.style.borderColor = 'var(--border)');
+  document.getElementById('hcard-' + id).style.borderColor = 'var(--primary)';
+}
+
+function completeSimulation() {
+  const disease = state.l1Result.predicted_disease;
+  const cfg = DISEASE_CONFIG[disease];
+  const h = state.selectedHospital || state.hospitals[0];
+
+  document.getElementById('summary-grid').innerHTML = `
+    <div class="summary-card">
+      <div class="s-label">Path Used</div>
+      <div class="s-val">${state.path === 'personal' ? 'Personal' : 'Sample'}</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">L1 Result</div>
+      <div class="s-val">${cfg.icon} ${cfg.label}</div>
+    </div>
+    <div class="summary-card">
+      <div class="s-label">Risk Level</div>
+      <div class="s-val">
+        <span class="label-tag tag-${state.l2Result.risk_level}">${state.l2Result.risk_level.toUpperCase()}</span>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('selected-hosp-card').innerHTML = `
+    <div class="sh-label">? Recommended Hospital</div>
+    <div class="sh-name">HOSPITAL_${String(h.id).padStart(2,'0')}</div>
+    <div class="sh-meta">Location: (${h.location.x}, ${h.location.y}) | Score: ${formatNum(h.score, 1)}</div>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+      ${h.has_ct_scan ? `<span class="specialist-badge">CT Imaging Support</span>` : `<span class="no-spec-badge">No CT Support</span>`}
+      ${state.l1Result.predicted_disease === 'stroke' && h.is_vascular_center ? `<span class="specialist-badge">Vascular Center</span>` : ''}
+    </div>
+  `;
+
+  showScreen('screen-complete');
+}
+
+function resetSim() {
+  state.path = null;
+  state.selectedSampleId = null;
+  state.l1Features = {};
+  state.l2Features = {};
+  state.l1Result = null;
+  state.l2Result = null;
+  state.hospitals = [];
+  state.selectedHospital = null;
+  resetL1Form();
+  state.screenHistory = ['screen-path'];
+  showScreen('screen-path', { record: false });
+}
+
+function animateLog(logId, lines, callback) {
+  const el = document.getElementById(logId);
+  el.innerHTML = '';
+  let i = 0;
+  const next = () => {
+    if (i < lines.length) {
+      const div = document.createElement('div');
+      div.className = 'log-line';
+      div.innerHTML = lines[i];
+      el.appendChild(div);
+      i++;
+      setTimeout(next, 260);
+    } else {
+      setTimeout(callback, 300);
+    }
+  };
+  next();
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.altKey && e.key === 'ArrowLeft') {
+    goBackOneStep();
+  }
+});
+
+updateBackButton();
+</script>

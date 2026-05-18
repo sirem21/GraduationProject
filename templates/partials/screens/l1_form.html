@@ -1,0 +1,131 @@
+<div id="screen-l1form" class="screen">
+  <header class="sys-header">
+    <div class="sys-logo mono">DAS <span>// v0.1.0</span></div>
+    <div class="sys-status"><div class="pulse-dot"></div><span>SYSTEM ONLINE</span></div>
+  </header>
+  <div class="progress-bar-wrap">
+    <div class="progress-steps">
+      <div class="p-step done"><div class="p-step-num">✓</div><span>ENTRY</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step done"><div class="p-step-num">✓</div><span>PATH</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step active"><div class="p-step-num">3</div><span>L1 MODEL</span></div>
+      <div class="p-line"></div>
+      <div class="p-step"><div class="p-step-num">4</div><span>L2 MODEL</span></div>
+      <div class="p-line"></div>
+      <div class="p-step"><div class="p-step-num">5</div><span>ROUTING</span></div>
+    </div>
+  </div>
+  <div class="main-content form-page">
+    <div class="page-tag">LAYER 1 · GENERAL ASSESSMENT</div>
+    <h2 class="page-title" style="font-size:32px;margin-bottom:4px">Patient Features</h2>
+    <p class="page-sub">// 12 baseline features (first 4 from each disease set)</p>
+
+    <div class="form-section">
+      <div class="form-section-title">🧠 Stroke Core Features</div>
+      <div class="form-grid">
+        <div class="field">
+          <div class="field-label">Sudden Onset</div>
+          <div class="toggle-group">
+            <button class="toggle-btn yes" data-field="sudden_onset" onclick="setToggle(this,'sudden_onset',1)">YES</button>
+            <button class="toggle-btn no active" data-field="sudden_onset" onclick="setToggle(this,'sudden_onset',0)">NO</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Paralysed Area</div>
+          <div class="toggle-group">
+            <button class="toggle-btn yes" data-field="paralysed_area" onclick="setToggle(this,'paralysed_area',1)">YES</button>
+            <button class="toggle-btn no active" data-field="paralysed_area" onclick="setToggle(this,'paralysed_area',0)">NO</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Speech Difficulty</div>
+          <div class="toggle-group">
+            <button class="toggle-btn yes" data-field="speech_difficulty" onclick="setToggle(this,'speech_difficulty',1)">YES</button>
+            <button class="toggle-btn no active" data-field="speech_difficulty" onclick="setToggle(this,'speech_difficulty',0)">NO</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Face Numbness</div>
+          <div class="toggle-group">
+            <button class="toggle-btn yes" data-field="face_numbness" onclick="setToggle(this,'face_numbness',1)">YES</button>
+            <button class="toggle-btn no active" data-field="face_numbness" onclick="setToggle(this,'face_numbness',0)">NO</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">🩸 Diabetes Core Features</div>
+      <div class="form-grid">
+        <div class="field">
+          <div class="field-label">Frequent Urination</div>
+          <div class="toggle-group">
+            <button class="toggle-btn yes" data-field="frequent_urination" onclick="setToggle(this,'frequent_urination',1)">YES</button>
+            <button class="toggle-btn no active" data-field="frequent_urination" onclick="setToggle(this,'frequent_urination',0)">NO</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Glucose Level (mg/dL)</div>
+          <div class="slider-wrap">
+            <input type="range" min="60" max="450" value="100" id="f-glucose_lvl" oninput="document.getElementById('v-glucose_lvl').textContent=this.value">
+            <div class="slider-val" id="v-glucose_lvl">100</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Excessive Thrist</div>
+          <div class="toggle-group">
+            <button class="toggle-btn yes" data-field="excessive_thrist" onclick="setToggle(this,'excessive_thrist',1)">YES</button>
+            <button class="toggle-btn no active" data-field="excessive_thrist" onclick="setToggle(this,'excessive_thrist',0)">NO</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Family History: Diabetes</div>
+          <div class="toggle-group">
+            <button class="toggle-btn yes" data-field="family_history_diabetes" onclick="setToggle(this,'family_history_diabetes',1)">YES</button>
+            <button class="toggle-btn no active" data-field="family_history_diabetes" onclick="setToggle(this,'family_history_diabetes',0)">NO</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-section-title">❤️ Hypertension Core Features</div>
+      <div class="form-grid">
+        <div class="field">
+          <div class="field-label">Blood Pressure (mmHg)</div>
+          <div class="slider-wrap">
+            <input type="range" min="80" max="220" value="120" id="f-blood_p" oninput="document.getElementById('v-blood_p').textContent=this.value">
+            <div class="slider-val" id="v-blood_p">120</div>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Family History: Hypertension</div>
+          <div class="toggle-group">
+            <button class="toggle-btn yes" data-field="family_history_hypertension" onclick="setToggle(this,'family_history_hypertension',1)">YES</button>
+            <button class="toggle-btn no active" data-field="family_history_hypertension" onclick="setToggle(this,'family_history_hypertension',0)">NO</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">Nose Bleed</div>
+          <div class="toggle-group">
+            <button class="toggle-btn yes" data-field="nose_bleed" onclick="setToggle(this,'nose_bleed',1)">YES</button>
+            <button class="toggle-btn no active" data-field="nose_bleed" onclick="setToggle(this,'nose_bleed',0)">NO</button>
+          </div>
+        </div>
+        <div class="field">
+          <div class="field-label">High Cholesterol</div>
+          <div class="toggle-group">
+            <button class="toggle-btn yes" data-field="cholesterol" onclick="setToggle(this,'cholesterol',1)">YES</button>
+            <button class="toggle-btn no active" data-field="cholesterol" onclick="setToggle(this,'cholesterol',0)">NO</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="state.path === 'sample' ? showScreen('screen-sample') : showScreen('screen-path')">← Back</button>
+      <button class="btn btn-primary" onclick="runL1()">Run L1 Analysis →</button>
+    </div>
+  </div>
+</div>

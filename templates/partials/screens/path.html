@@ -1,0 +1,41 @@
+<div id="screen-path" class="screen">
+  <header class="sys-header">
+    <div class="sys-logo mono">DAS <span>// v0.1.0</span></div>
+    <div class="sys-status"><div class="pulse-dot"></div><span>SYSTEM ONLINE</span></div>
+  </header>
+  <div class="progress-bar-wrap">
+    <div class="progress-steps">
+      <div class="p-step done"><div class="p-step-num">✓</div><span>ENTRY</span></div>
+      <div class="p-line done"></div>
+      <div class="p-step active"><div class="p-step-num">2</div><span>PATH</span></div>
+      <div class="p-line"></div>
+      <div class="p-step"><div class="p-step-num">3</div><span>L1 MODEL</span></div>
+      <div class="p-line"></div>
+      <div class="p-step"><div class="p-step-num">4</div><span>L2 MODEL</span></div>
+      <div class="p-line"></div>
+      <div class="p-step"><div class="p-step-num">5</div><span>ROUTING</span></div>
+    </div>
+  </div>
+  <div class="main-content" style="align-items:center;text-align:center">
+    <div class="page-tag">PAGE 2 · SELECTION</div>
+    <h2 class="page-title">CHOOSE<br>YOUR PATH</h2>
+    <p class="page-sub">// select assessment mode to continue</p>
+    <div class="path-grid">
+      <div class="path-card path-a" onclick="choosePath('personal')">
+        <div class="path-icon">🧑</div>
+        <div class="path-badge">PATH A · PERSONAL</div>
+        <h3>Personal Data</h3>
+        <p>Enter patient vitals and symptoms manually. Layer 1 questions collect baseline features for disease inference.</p>
+      </div>
+      <div class="path-card path-b" onclick="choosePath('sample')">
+        <div class="path-icon">🗂</div>
+        <div class="path-badge">PATH B · SAMPLE</div>
+        <h3>Sample Cases</h3>
+        <p>Select a pre-configured patient case with pre-filled feature data. Ideal for demonstration and testing.</p>
+      </div>
+    </div>
+    <div style="margin-top:24px">
+      <button class="btn btn-ghost" onclick="showScreen('screen-landing')">← Back</button>
+    </div>
+  </div>
+</div>
