@@ -5,6 +5,7 @@ import numpy as np
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime
 import holidays
+import random
 
 app = Flask(__name__)
 
@@ -56,6 +57,11 @@ def get_env_factors(date, weather_type='clear'):
         shift_rate = 1.0
 
     return holiday_factor, weather_factor, shift_rate
+
+def get_random_weather():
+    """Randomly select one weather type from the available weather factor map."""
+    weather_options = ['clear', 'rain', 'snow', 'fog']
+    return random.choice(weather_options)
 
 def dispatch_main_algo(patient, hospitals, current_time, weather='clear'):
     holiday_factor, weather_factor, shift_rate = get_env_factors(current_time, weather)
@@ -471,7 +477,12 @@ def get_hospitals():
     data = request.json
     disease    = data.get("disease", "stroke")
     risk_level = data.get("risk_level", "medium")
-    weather    = data.get("weather", "clear")
+    weather    = data.get("weather", None)
+    
+    # Randomize weather if not provided
+    if weather is None:
+        weather = get_random_weather()
+    
     datetime_str = data.get("datetime", None)
 
     # Koordinat isimlendirmesi: API'den lon/lat veya x/y gelebilir
@@ -486,7 +497,13 @@ def get_hospitals():
         except Exception:
             pass
 
-    return jsonify(rank_hospitals(disease, risk_level, weather, datetime_obj, patient_lon, patient_lat))
+    hospitals = rank_hospitals(disease, risk_level, weather, datetime_obj, patient_lon, patient_lat)
+    
+    # Return both weather and hospitals
+    return jsonify({
+        "weather": weather,
+        "hospitals": hospitals
+    })
 
 
 @app.route("/api/debug", methods=["POST"])

@@ -42,6 +42,17 @@ const L2_FIELDS = {
   ]
 };
 
+const WEATHER_CONFIG = {
+  clear: { emoji: '☀️', label: 'Clear' },
+  rain: { emoji: '🌧️', label: 'Rain' },
+  snow: { emoji: '❄️', label: 'Snow' },
+  fog: { emoji: '🌫️', label: 'Fog' }
+};
+
+function getWeatherEmoji(weatherType) {
+  return WEATHER_CONFIG[weatherType]?.emoji || '🌤️';
+}
+
 function formatNum(value, maxDecimals = 1) {
   const num = Number(value);
   if (!Number.isFinite(num)) return '--';
@@ -463,10 +474,12 @@ function routeToHospital() {
         patient_x: location.x,
         patient_y: location.y
       })
-    }).then(r => r.json()).then(hospitals => {
-      state.hospitals = hospitals;
-      state.selectedHospital = hospitals[0];
-      renderHospitals(hospitals, predicted_disease);
+    }).then(r => r.json()).then(response => {
+      // Extract weather and hospitals from response
+      state.weather = response.weather;
+      state.hospitals = response.hospitals;
+      state.selectedHospital = response.hospitals[0];
+      renderHospitals(response.hospitals, predicted_disease);
       showScreen('screen-hospitals');
     });
   });
@@ -476,10 +489,16 @@ function renderHospitals(hospitals, disease) {
   const list = document.getElementById('hospital-list');
   
   // Add location source info at the top
+  const weatherEmoji = getWeatherEmoji(state.weather);
+  const weatherLabel = WEATHER_CONFIG[state.weather]?.label || 'Unknown';
   const locationHeader = `
-    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
       <span style="font-size: 16px;">📍</span>
       <strong>Location Source:</strong> ${state.locationSource || 'Not specified'}
+      <span style="margin-left: auto; display: flex; align-items: center; gap: 6px;">
+        <span style="font-size: 16px;">${weatherEmoji}</span>
+        <strong>Weather:</strong> ${weatherLabel}
+      </span>
     </div>
   `;
   
@@ -492,7 +511,7 @@ function renderHospitals(hospitals, disease) {
       <div class="hosp-info">
         <div class="hosp-name">HOSPITAL_${String(h.id).padStart(2,'0')}</div>
         <div class="hosp-meta">
-          <span class="hosp-meta-item">Location: (${h.location.x}, ${h.location.y})</span>
+          <span class="hosp-meta-item">${weatherEmoji} Location: (${h.location.x}, ${h.location.y})</span>
           <span class="hosp-meta-item">Capacity: ${available} / ${h.total_capacity} beds</span>
           <span class="hosp-meta-item">Occupancy: ${occupancyPercent}%</span>
         </div>
@@ -520,6 +539,7 @@ function completeSimulation() {
   const disease = state.l1Result.predicted_disease;
   const cfg = DISEASE_CONFIG[disease];
   const h = state.selectedHospital || state.hospitals[0];
+  const weatherEmoji = getWeatherEmoji(state.weather);
 
   document.getElementById('summary-grid').innerHTML = `
     <div class="summary-card">
@@ -541,7 +561,7 @@ function completeSimulation() {
   document.getElementById('selected-hosp-card').innerHTML = `
     <div class="sh-label">? Recommended Hospital</div>
     <div class="sh-name">HOSPITAL_${String(h.id).padStart(2,'0')}</div>
-    <div class="sh-meta">Location: (${h.location.x}, ${h.location.y}) | Score: ${formatNum(h.score, 1)}</div>
+    <div class="sh-meta">${weatherEmoji} Location: (${h.location.x}, ${h.location.y}) | Score: ${formatNum(h.score, 1)}</div>
     <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
       ${h.has_ct_scan ? `<span class="specialist-badge">CT Imaging Support</span>` : `<span class="no-spec-badge">No CT Support</span>`}
       ${state.l1Result.predicted_disease === 'stroke' && h.is_vascular_center ? `<span class="specialist-badge">Vascular Center</span>` : ''}
